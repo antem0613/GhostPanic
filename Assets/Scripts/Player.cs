@@ -45,6 +45,7 @@ public class Player : Singleton<Player>
     [SerializeField]
     LayerMask orbMask;
 
+    public GameObject GameClearPanel { get; private set; }
     public GameObject GameOverPanel { get; private set; }
 
     DamageIndicator damageIndicator;
@@ -55,6 +56,7 @@ public class Player : Singleton<Player>
     bool swapped = false;
     bool isGameOver = false;
     public bool titleInitialized = false;
+    public bool iscoinBlocking = false;
 
     // Update is called once per frame
     void Update()
@@ -213,6 +215,12 @@ public class Player : Singleton<Player>
                     pointer.gameObject.SetActive(false);
             }
         }
+    }
+
+    public void GameClear()
+    {
+        isGameOver = false;
+        GameClearPanel.SetActive(true);
     }
 
     void GameOver()
