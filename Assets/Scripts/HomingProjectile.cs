@@ -81,11 +81,8 @@ public class HomingProjectile : MonoBehaviour
             case ProjectileState.Homing:
                 Vector3 direction = (target.position - transform.position).normalized;
 
-                // 2. 自分のローカル座標 (forward) ではなく、計算した「方向」に向かって移動
-                // (transform.Translate(Vector3.forward...) ではありません)
                 transform.position += direction * homingSpeed * Time.deltaTime;
 
-                // 3. (オプション) 弾の見た目を進行方向に向ける
                 if (direction.sqrMagnitude > 0.001f)
                 {
                     transform.rotation = Quaternion.LookRotation(direction);
@@ -98,8 +95,6 @@ public class HomingProjectile : MonoBehaviour
     {
         if (other.CompareTag(playerTag))
         {
-            Debug.Log($"Projectile hit player: {other.name}");
-
             int targetPlayerId = 1;
             if (Player.Instance.is2P && other.transform == Player.Instance.target2)
             {
@@ -112,7 +107,6 @@ public class HomingProjectile : MonoBehaviour
         }
         else if (!other.isTrigger && !other.CompareTag("Enemy"))
         {
-            Debug.Log($"Projectile hit wall: {other.name}");
             DestroyProjectile();
         }
     }

@@ -24,6 +24,7 @@ public class GameClearManager : MonoBehaviour
         Second = Second.GetComponent<TMP_Text>();
         Third = Third.GetComponent<TMP_Text>();
         WiimoteManager.FindWiimotes();
+        Initialize();
     }
 
     public void Initialize()

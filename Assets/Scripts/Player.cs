@@ -1,6 +1,7 @@
 using JetBrains.Annotations;
 using UnityEditor.PackageManager;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using WiimoteApi;
 
@@ -57,6 +58,7 @@ public class Player : Singleton<Player>
     bool isGameOver = false;
     public bool titleInitialized = false;
     public bool iscoinBlocking = false;
+    bool isDebugMode = false;
 
     // Update is called once per frame
     void Update()
@@ -66,9 +68,15 @@ public class Player : Singleton<Player>
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Mouse0))
+        if (isDebugMode)
         {
-            Shot(Input.mousePosition, target1.parent, 0);
+            ir_pointer[0].position = Mouse.current.position.ReadValue();
+            if (Input.GetKeyDown(KeyCode.Mouse0))
+            {
+                Shot(Input.mousePosition, target1.parent, 0);
+            }
+            HPbar_1.value = (float)HP1 / (float)maxHP;
+            return;
         }
 
         if (!WiimoteManager.HasWiimote())
@@ -117,7 +125,6 @@ public class Player : Singleton<Player>
             interval1 -= Time.deltaTime;
         }
 
-        // Handle Controller 2
         if (is2P)
         {
             float[] pointer2 = wiimote2.Ir.GetPointingPosition();
@@ -137,11 +144,18 @@ public class Player : Singleton<Player>
         }
     }
 
+    public void CheckDebugMode()
+    {
+        if (!WiimoteManager.HasWiimote())
+        {
+            isDebugMode = true;
+        }
+    }
+
     void Shot(Vector2 pos, Transform beamSpawnPoint, int id)
     {
         if (hitEffectPrefab == null || beamSpawnPoint == null)
         {
-            Debug.LogError("ビームのプレハブまたは発生場所が設定されていません！");
             return;
         }
 
@@ -171,6 +185,7 @@ public class Player : Singleton<Player>
             orb?.DestroyProjectile();
         }
     }
+
     public void TakeDamage(int playerNumber, int damage)
     {
         if (playerNumber == 1)
@@ -206,7 +221,6 @@ public class Player : Singleton<Player>
         HP1 = maxHP;
         HP2 = -100;
 
-        // Initially hide all pointers
         if (ir_pointer != null)
         {
             foreach (var pointer in ir_pointer)
@@ -235,7 +249,6 @@ public class Player : Singleton<Player>
 
     public void SetUI()
     {
-        Debug.Log("Setting UI");
         WiimoteManager.FindWiimotes();
         if (ir_pointer != null)
         {
@@ -332,6 +345,10 @@ public class Player : Singleton<Player>
     public void AddCoin(int amount)
     {
         coinCount += amount;
+        if(coinCount < 0)
+        {
+            coinCount = 0;
+        }
     }
 
     public void AddScore(int amount)

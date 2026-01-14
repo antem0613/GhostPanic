@@ -1,10 +1,7 @@
 using Dreamteck.Splines;
-using System.Collections;
-using UnityEditor.Rendering.LookDev;
 using UnityEngine;
 using UnityEngine.Events;
 
-// SplineFollowerコンポーネントが必須
 [RequireComponent(typeof(SplineFollower))]
 public class CameraMover : MonoBehaviour
 {
@@ -32,7 +29,6 @@ public class CameraMover : MonoBehaviour
 
         public float index;
 
-        [Tooltip("このノードで起動するWaveSpawner")]
         public WaveSpawner spawner;
 
         public float followSpeed;
@@ -40,15 +36,11 @@ public class CameraMover : MonoBehaviour
         public UnityEvent onNodeReachedAction;
     }
 
-    [Header("スプライン設定")]
-    [Tooltip("ステージの移動ルートを定義したSplineComputer")]
     public SplineComputer spline;
 
     [SerializeField]
     float initialFollowSpeed = 10.0f;
 
-    [Header("エンカウンター（戦闘）設定")]
-    [Tooltip("停止する地点と、そこで起動するスポナーのリスト")]
     public NodeEncounter[] encounters;
 
     public bool destroyEnemiesOnArrival = true;
@@ -72,23 +64,20 @@ public class CameraMover : MonoBehaviour
         splineFollower.followSpeed = initialFollowSpeed;
         splineFollower.spline = spline;
         splineFollower.follow = true;
-        splineFollower.wrapMode = SplineFollower.Wrap.Default; // ループしない
+        splineFollower.wrapMode = SplineFollower.Wrap.Default;
         currentState = PlayerState.Idle;
 
         // 最初のノードへ移動を開始
         MoveToNextNode();
     }
 
-    /// <summary>
-    /// 次のノード（エンカウンター地点）へ移動を開始します
-    /// </summary>
     private void MoveToNextNode()
     {
         if(currentState != PlayerState.Idle)
         {
             return;
         }
-        currentEncounterIndex++; // 次のノードへ
+        currentEncounterIndex++;
         currentState = PlayerState.Moving;
 
         // 全てのノードをクリアした場合
@@ -107,7 +96,7 @@ public class CameraMover : MonoBehaviour
         if (targetNodeIndex < 0 || targetNodeIndex >= spline.pointCount)
         {
             Debug.LogError($"無効なノード番号 {targetNodeIndex} が指定されました。Splineには {spline.pointCount} 個のポイント(0～{spline.pointCount - 1})しかありません。", this);
-            return; // 移動を停止
+            return;
         }
 
         targetPercent = targetNodeIndex;
@@ -125,37 +114,30 @@ public class CameraMover : MonoBehaviour
 
     void OnNodeReached(double percentReached)
     {
-        // --- 1. ガード処理 ---
         if (currentState != PlayerState.Moving)
         {
-            Debug.LogWarning($"OnNodeReached が不正な状態({currentState})で呼ばれました。無視します。");
+            Debug.LogWarning($"OnNodeReached が不正な状態({currentState})で呼ばれました。");
             return;
         }
 
-        // --- 2. 基本処理 ---
-        splineFollower.onEndReached -= OnNodeReached; // イベント解除
-        Debug.Log($"ノードに到着: {currentEncounterIndex} (パーセント: {lastStopPercent})");
+        splineFollower.onEndReached -= OnNodeReached;
+        Debug.Log($"ノードに到着: {currentEncounterIndex} ({lastStopPercent})");
 
-        // --- 3. MoveAndSurvive区間の終了処理 ---
-        // （もし前の区間がMoveAndSurviveだったら）
         if (activeMovingSpawner != null)
         {
-            Debug.Log($"MoveAndSurvive区間が終了。スポナー {activeMovingSpawner.name} を強制停止します。");
+            Debug.Log($"MoveAndSurvive区間が終了。スポナー {activeMovingSpawner.name} を強制停止。");
             activeMovingSpawner.OnAllWavesCompleted -= OnEnemiesDefeated_Move;
             activeMovingSpawner.ForceStopAndComplete(destroyEnemiesOnArrival);
             activeMovingSpawner = null;
         }
 
-        // --- 4. 最終地点(1.0)に到着した場合 ---
         if (currentEncounterIndex >= encounters.Length)
         {
-            Debug.Log("Splineの終点に到着。ゲームクリア。");
+            Debug.Log("Splineの終点に到着");
             currentState = PlayerState.Idle;
-            // (ここでクリア処理を呼ぶ)
             return;
         }
 
-        // --- 5. 到着したノードのタイプ別処理 ---
         NodeEncounter currentEncounter = encounters[currentEncounterIndex];
 
         currentEncounter.onNodeReachedAction?.Invoke();
@@ -180,12 +162,12 @@ public class CameraMover : MonoBehaviour
         if (encounter.onNodeReachedAction.GetPersistentEventCount() > 0)
         {
             currentState = PlayerState.WaitingOnEvent;
-            Debug.Log($"ノード {currentEncounterIndex} (None) に到着。イベント待機中。");
+            Debug.Log($"ノード {currentEncounterIndex} に到着。イベント待機中。");
         }
         else
         {
             currentState = PlayerState.Idle;
-            Debug.Log($"ノード {currentEncounterIndex} (None) に到着。次のノードへ移動します。");
+            Debug.Log($"ノード {currentEncounterIndex} に到着。次のノードへ移動します。");
             MoveToNextNode();
         }
     }
@@ -195,12 +177,12 @@ public class CameraMover : MonoBehaviour
         if (currentState == PlayerState.WaitingOnEvent)
         {
             Debug.Log("イベント完了のシグナルを受信。次のノードへ移動します。");
-            currentState = PlayerState.Idle; // 状態をリセット
-            MoveToNextNode(); // 次のノードへ
+            currentState = PlayerState.Idle;
+            MoveToNextNode();
         }
         else
         {
-            Debug.LogWarning($"SignalEventComplete が呼ばれましたが、待機状態(WaitingOnEvent)ではありません。 (現在の状態: {currentState})");
+            Debug.LogWarning($"SignalEventComplete が呼ばれましたが、待機状態ではありません。 (現在の状態: {currentState})");
         }
     }
 
@@ -208,19 +190,16 @@ public class CameraMover : MonoBehaviour
     {
         currentState = PlayerState.InCombat;
 
-        Debug.Log($"ノード {encounter.index} (StopAndClear) に到着。戦闘開始。");
+        Debug.Log($"ノード {encounter.index} に到着。戦闘開始。");
 
         WaveSpawner currentSpawner = encounter.spawner;
         if (currentSpawner != null)
         {
-            // 全滅したら OnEnemiesDefeated が呼ばれるように登録
             currentSpawner.OnAllWavesCompleted += OnEnemiesDefeated_Stop;
-            // 到着してからスポーン開始
             currentSpawner.StartWaveSequence();
         }
         else
         {
-            // スポナーがない場合は、すぐに次へ
             Debug.LogWarning($"StopAndClear ノード {encounter.index} にスポナーがありません。スキップします。");
             currentState = PlayerState.Idle;
             MoveToNextNode();
@@ -229,18 +208,18 @@ public class CameraMover : MonoBehaviour
 
     void HandleMove(NodeEncounter encounter)
     {
-        Debug.Log($"ノード {encounter.index} (MoveAndSurvive) に到着。ウェーブを強制終了します。");
+        Debug.Log($"ノード {encounter.index} に到着。ウェーブを強制終了します。");
 
         WaveSpawner currentSpawner = encounter.spawner;
         if (currentSpawner != null)
         {
-            activeMovingSpawner = currentSpawner; // このスポナーを「移動中アクティブ」に設定
+            activeMovingSpawner = currentSpawner;
             activeMovingSpawner.OnAllWavesCompleted += OnEnemiesDefeated_Move;
             activeMovingSpawner.StartWaveSequence();
         }
         else
         {
-            Debug.LogWarning($"MoveAndSurvive ノード {currentEncounterIndex} にスポナーがありませんでした。スキップします。");
+            Debug.LogWarning($"MoveAndSurvive ノード {currentEncounterIndex} にスポナーがありませんでした");
         }
 
         currentState = PlayerState.Idle;
@@ -249,11 +228,10 @@ public class CameraMover : MonoBehaviour
 
     void OnEnemiesDefeated_Stop(WaveSpawner completedSpawner)
     {
-        // --- ガード処理 ---
         if (currentState != PlayerState.InCombat) return;
         if (completedSpawner != encounters[currentEncounterIndex].spawner)
         {
-            Debug.LogWarning("OnEnemiesDefeated_StopAndClear: スポナー不一致。無視。");
+            Debug.LogWarning("OnEnemiesDefeated_StopAndClear: スポナー不一致");
             if (completedSpawner != null) completedSpawner.OnAllWavesCompleted -= OnEnemiesDefeated_Stop;
             return;
         }
@@ -262,13 +240,12 @@ public class CameraMover : MonoBehaviour
 
         completedSpawner.OnAllWavesCompleted -= OnEnemiesDefeated_Stop;
 
-        currentState = PlayerState.Idle; // 状態を戻す
-        MoveToNextNode(); // 次のノードへ
+        currentState = PlayerState.Idle;
+        MoveToNextNode();
     }
 
     void OnEnemiesDefeated_Move(WaveSpawner completedSpawner)
     {
-        // カメラは移動中のため、進行には影響しない
         Debug.Log($"MoveAndSurviveのウェーブが早期に完了しました: {completedSpawner.name}");
         completedSpawner.OnAllWavesCompleted -= OnEnemiesDefeated_Move;
         if (activeMovingSpawner == completedSpawner)
@@ -277,7 +254,6 @@ public class CameraMover : MonoBehaviour
         }
     }
 
-    // オブジェクト破棄時にイベント購読を解除（安全対策）
     void OnDestroy()
     {
         if (splineFollower != null)
@@ -285,13 +261,11 @@ public class CameraMover : MonoBehaviour
             splineFollower.onEndReached -= OnNodeReached;
         }
 
-        // アクティブなスポナーのイベントを解除
         if (activeMovingSpawner != null)
         {
             activeMovingSpawner.OnAllWavesCompleted -= OnEnemiesDefeated_Move;
         }
 
-        // 戦闘中だった場合のイベントを解除
         if (currentState == PlayerState.InCombat && currentEncounterIndex < encounters.Length)
         {
             WaveSpawner spawner = encounters[currentEncounterIndex].spawner;

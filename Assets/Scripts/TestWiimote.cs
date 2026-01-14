@@ -22,8 +22,7 @@ public class TestWiimote : MonoBehaviour
     void Start()
     {
         WiimoteManager.FindWiimotes();
-        
-        // Initially hide all pointers
+
         if (ir_pointer != null)
         {
             foreach (var pointer in ir_pointer)
@@ -59,7 +58,6 @@ public class TestWiimote : MonoBehaviour
             }
         } while (ret1 > 0 || ret2 > 0);
 
-        // Handle Controller 1 registration
         if (wiimote1.Button.a && !isPressedA1)
         {
             isPressedA1 = true;
@@ -72,7 +70,6 @@ public class TestWiimote : MonoBehaviour
             isPressedA1 = false;
         }
 
-        // Only process controller 1 input if registered
         if (isRegistered1)
         {
             float[] pointer1 = wiimote1.Ir.GetPointingPosition();
@@ -90,10 +87,8 @@ public class TestWiimote : MonoBehaviour
             }
         }
 
-        // Handle Controller 2
         if (wiimote2 != null)
         {
-            // Handle Controller 2 registration
             if (wiimote2.Button.a && !isPressedA2)
             {
                 isPressedA2 = true;
@@ -106,7 +101,6 @@ public class TestWiimote : MonoBehaviour
                 isPressedA2 = false;
             }
 
-            // Only process controller 2 input if registered
             if (isRegistered2)
             {
                 float[] pointer2 = wiimote2.Ir.GetPointingPosition();

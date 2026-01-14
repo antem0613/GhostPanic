@@ -28,6 +28,8 @@ public class SceneLoader : MonoBehaviour
 
         Player.Instance.ResetScore();
 
+        Player.Instance.CheckDebugMode();
+
         SceneManager.LoadScene("Stage1");
     }
 
